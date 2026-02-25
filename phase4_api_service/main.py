@@ -54,6 +54,20 @@ class RecommendationResponse(BaseModel):
     parsed_filters: Optional[dict] = None
     error: Optional[str] = None
 
+VALID_LOCATIONS = None
+
+def get_valid_locations():
+    global VALID_LOCATIONS
+    if VALID_LOCATIONS is None:
+        try:
+            with engine.connect() as conn:
+                res = conn.execute(text("SELECT DISTINCT location FROM restaurants WHERE location IS NOT NULL"))
+                VALID_LOCATIONS = {row[0].lower() for row in res}
+        except Exception as e:
+            logger.error(f"Error loading valid locations: {e}")
+            return set()
+    return VALID_LOCATIONS
+
 @app.post("/recommend", response_model=RecommendationResponse)
 def get_recommendation(request: RecommendationRequest):
     parsed_filters = {}
@@ -68,16 +82,12 @@ def get_recommendation(request: RecommendationRequest):
                 parsed_filters = parse_search_query(request.search_query)
                 
                 # Validation: Only allow locations that exist in our Bangalore dataset
-                if parsed_filters.get("location"):
-                    try:
-                        with engine.connect() as conn:
-                            res = conn.execute(text("SELECT DISTINCT location FROM restaurants WHERE location IS NOT NULL"))
-                            valid_locs = {row[0].lower() for row in res}
-                            if parsed_filters["location"].lower() not in valid_locs:
-                                logger.warning(f"Ignoring hallucinated location: {parsed_filters['location']}")
-                                parsed_filters["location"] = None
-                    except Exception as ve:
-                        logger.error(f"Location validation error: {ve}")
+                loc_to_validate = parsed_filters.get("location")
+                if loc_to_validate:
+                    valid_locs = get_valid_locations()
+                    if loc_to_validate.lower() not in valid_locs:
+                        logger.warning(f"Ignoring hallucinated location: {loc_to_validate}")
+                        parsed_filters["location"] = None
             except Exception as e:
                 logger.error(f"Query parsing error: {e}")
 
