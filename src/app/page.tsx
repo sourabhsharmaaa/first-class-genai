@@ -68,11 +68,13 @@ export default function Home() {
           if (data.parsed_filters) {
             const pf = data.parsed_filters;
             if (pf.location) {
-              const matchedLoc = locations.find(l => l.toLowerCase() === pf.location.toLowerCase());
+              const matchedLoc = locations.find(l => l.toLowerCase() === pf.location.toLowerCase()) ||
+                locations.find(l => l.toLowerCase().includes(pf.location.toLowerCase()));
               setSelectedLocation(matchedLoc || pf.location);
             }
             if (pf.cuisine) {
-              const matchedCui = cuisines.find(c => c.toLowerCase() === pf.cuisine.toLowerCase());
+              const matchedCui = cuisines.find(c => c.toLowerCase() === pf.cuisine.toLowerCase()) ||
+                cuisines.find(c => c.toLowerCase().includes(pf.cuisine.toLowerCase()));
               setSelectedCuisine(matchedCui || pf.cuisine);
             }
             if (pf.max_price) setMaxPrice(pf.max_price.toString());
@@ -180,7 +182,7 @@ export default function Home() {
                 onChange={(e) => setSelectedLocation(e.target.value)}
               >
                 <option value="">Select locality...</option>
-                {locations.slice(0, 100).map(loc => (
+                {locations.map(loc => (
                   <option key={loc} value={loc}>{loc}</option>
                 ))}
               </select>
@@ -195,7 +197,7 @@ export default function Home() {
                 onChange={(e) => setSelectedCuisine(e.target.value)}
               >
                 <option value="">Select cuisines...</option>
-                {cuisines.slice(0, 100).map(c => (
+                {cuisines.map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
