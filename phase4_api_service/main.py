@@ -66,6 +66,18 @@ def get_recommendation(request: RecommendationRequest):
         if request.search_query:
             try:
                 parsed_filters = parse_search_query(request.search_query)
+                
+                # Validation: Only allow locations that exist in our Bangalore dataset
+                if parsed_filters.get("location"):
+                    try:
+                        with engine.connect() as conn:
+                            res = conn.execute(text("SELECT DISTINCT location FROM restaurants WHERE location IS NOT NULL"))
+                            valid_locs = {row[0].lower() for row in res}
+                            if parsed_filters["location"].lower() not in valid_locs:
+                                logger.warning(f"Ignoring hallucinated location: {parsed_filters['location']}")
+                                parsed_filters["location"] = None
+                    except Exception as ve:
+                        logger.error(f"Location validation error: {ve}")
             except Exception as e:
                 logger.error(f"Query parsing error: {e}")
 

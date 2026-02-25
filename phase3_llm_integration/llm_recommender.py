@@ -29,12 +29,27 @@ def parse_search_query(query: str, model: str = "llama-3.1-8b-instant") -> dict:
     if not client or not query:
         return {}
 
-    prompt = f'Parse this query into JSON: "{query}". Extract: location, cuisine, max_price, min_rating. Return ONLY valid JSON.'
+    prompt = f"""
+    Parse the following user search query for Bangalore, India restaurant recommendations into a structured JSON object.
+    Query: "{query}"
+
+    Extract:
+    1. location (Specific Bangalore locality, e.g., "Indiranagar", "Koramangala", "BTM")
+    2. cuisine (e.g., "Japanese", "North Indian")
+    3. max_price (number)
+    4. min_rating (number)
+
+    CRITICAL RULES:
+    - ONLY extract specific Bangalore localities for 'location'. 
+    - NEVER extract countries (like "Japan") or cities (like "Bangalore") as the location.
+    - If the user says "Japanese", extract "Japanese" as cuisine and return null for location.
+    - Return ONLY valid JSON.
+    """
 
     try:
         completion = client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "You output JSON only."},
+                {"role": "system", "content": "You are a specialized query parser for Bangalore restaurants. You output JSON only."},
                 {"role": "user", "content": prompt}
             ],
             model=model,
