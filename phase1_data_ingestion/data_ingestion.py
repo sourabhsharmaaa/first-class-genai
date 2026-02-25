@@ -47,8 +47,8 @@ def get_zomato_data(dataset_name: str = "ManikaSaini/zomato-restaurant-recommend
         
     # 4. Clean 'cuisines' (e.g. normalize spaces around commas)
     if 'cuisines' in df.columns:
-        df['cuisines'] = df['cuisines'].astype(str).apply(
-            lambda x: ', '.join([c.strip() for c in x.split(',')]) if x.lower() != 'nan' else ''
+        df['cuisines'] = df['cuisines'].apply(
+            lambda x: ', '.join([c.strip() for c in str(x).split(',')]) if pd.notna(x) and str(x).lower() != 'nan' else ''
         )
         
     # 5. Normalize other text columns
