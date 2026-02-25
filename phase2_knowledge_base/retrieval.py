@@ -57,7 +57,7 @@ def retrieve_restaurants(
         params["max_rating"] = max_rating
 
     # Sorting and Limit
-    query_str += " ORDER BY CASE WHEN rate ~ '^[0-9]' THEN CAST(SPLIT_PART(rate, '/', 1) AS NUMERIC) ELSE 0 END DESC NULLS LAST LIMIT :limit"
+    query_str += " ORDER BY rate DESC NULLS LAST LIMIT :limit"
     params["limit"] = top_n * 2 # Get more to deduplicate
 
     try:
