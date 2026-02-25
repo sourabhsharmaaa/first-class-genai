@@ -49,23 +49,28 @@ def parse_search_query(query: str, model: str = "llama-3.1-8b-instant") -> dict:
 
 def generate_recommendation_prompt(df: pd.DataFrame, preferences: dict) -> str:
     """
-    Constructs a concise prompt for faster generation.
+    Constructs a prompt for stable and customized recommendations.
     """
-    prompt = f"Recommend these restaurants for preferences: {preferences}.\n\n"
-    
     if df.empty:
-        return '{"summary": "No matches found.", "restaurants": []}'
+        return '{"summary": "No exact matches found. Try broadening your criteria.", "restaurants": []}'
         
+    prompt = f"Recommend these SPECIFIC restaurants from our Zomato dataset for preferences: {preferences}.\n\n"
+    prompt += "RESTAURANTS TO CHOOSE FROM (USE ONLY THESE):\n"
+    
     for _, row in df.iterrows():
-        prompt += f"- {row.get('name')}: {row.get('rate')} stars, ₹{row.get('approx_cost(for two people)')}, Location: {row.get('location')}, Cuisines: {row.get('cuisines')}\n"
+        # Clean price string for the prompt
+        price = str(row.get('approx_cost(for two people)', 'N/A')).replace('.0', '')
+        prompt += f"- {row.get('name')}: {row.get('rate')} stars, Cost: ₹{price}, Location: {row.get('location')}, Cuisines: {row.get('cuisines')}, Address: {row.get('address')}\n"
         
     prompt += """
-Output strictly valid JSON with a detailed 'summary' paragraph and an array of 'restaurants' with: id, name, rating, costForTwo, address, cuisines, and 'aiReason' (2-3 sentences).
-Example:
-{
-  "summary": "...",
-  "restaurants": [{"id": 1, "name": "...", "aiReason": "..."}]
-}
+CRITICAL RULES:
+1. You MUST ONLY use the restaurant names and data provided in the list above. 
+2. NEVER use names like "Joe's Diner", "Sushi Palace", or "Taco Loco" unless they are in the list.
+3. If no restaurants are in the list, state that no matches were found.
+4. Output a detailed 'summary' paragraph (3-4 sentences) that mentions the specific restaurants you picked and why they fit the user's location, cuisine, and budget.
+5. Provide a JSON object with: summary (string) and restaurants (array of objects with: id, name, rating, costForTwo, address, cuisines, aiReason).
+
+Output strictly valid JSON.
 """
     return prompt
 

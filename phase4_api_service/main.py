@@ -69,17 +69,23 @@ def get_recommendation(request: RecommendationRequest):
             except Exception as e:
                 logger.error(f"Query parsing error: {e}")
 
-        # 2. Merge filters
+        # 2. Merge filters (Dropdowns and Parsed values)
         location = parsed_filters.get("location") or request.location
         cuisine = parsed_filters.get("cuisine") or request.cuisine
         
+        pricesResource = [v for v in [request.max_price, parsed_filters.get("max_price")] if v is not None]
+        max_price = min(pricesResource) if pricesResource else None
+
+        min_ratingsResource = [v for v in [request.min_rating, parsed_filters.get("min_rating")] if v is not None]
+        min_rating = max(min_ratingsResource) if min_ratingsResource else None
+
         # 3. Retrieve the data
         try:
             matched_df = retrieve_restaurants(
                 location=location,
                 cuisine=cuisine,
-                max_price=request.max_price, # Use raw request for now to keep it simple
-                min_rating=request.min_rating,
+                max_price=max_price,
+                min_rating=min_rating,
                 top_n=request.top_n or 5
             )
         except Exception as e:
@@ -88,7 +94,12 @@ def get_recommendation(request: RecommendationRequest):
             
         # 4. Get LLM Recommendation
         try:
-            llm_response = get_llm_recommendation(matched_df, {"location": location, "cuisine": cuisine})
+            llm_response = get_llm_recommendation(matched_df, {
+                "location": location, 
+                "cuisine": cuisine,
+                "max_price": max_price,
+                "min_rating": min_rating
+            })
         except Exception as e:
             logger.error(f"LLM error: {e}")
             
