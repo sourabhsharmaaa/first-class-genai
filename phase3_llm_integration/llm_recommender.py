@@ -30,19 +30,21 @@ def parse_search_query(query: str, model: str = "llama-3.1-8b-instant") -> dict:
         return {}
 
     prompt = f"""
-    Parse the following user search query for Bangalore, India restaurant recommendations into a structured JSON object.
+    Parse the user's Bangalore restaurant search query into a structured JSON object.
     Query: "{query}"
 
     Extract:
-    1. location (Specific Bangalore locality, e.g., "Indiranagar", "Koramangala", "BTM", "Church Street", "MG Road", "JP Nagar", "Electronic City")
-    2. cuisine (e.g., "Japanese", "North Indian")
-    3. max_price (number)
-    4. min_rating (number)
+    1. location (Specific Bangalore neighborhood/area. E.g., "Indiranagar", "Koramangala", "BTM", "Electronic City", "Church Street", "HSR")
+    2. cuisine (E.g., "Japanese", "Pizza", "North Indian")
+    3. max_price (Integer number)
+    4. min_rating (Float number)
 
     CRITICAL RULES:
-    - ONLY extract specific Bangalore localities for 'location'. 
-    - NEVER extract countries (like "Japan") or cities (like "Bangalore") as the location.
-    - Important: Do not confuse cuisines with locations. For example, in "Japanese in Electronic City", "Japanese" is the cuisine and "Electronic City" is the location.
+    - ONLY extract specific Bangalore neighborhoods for 'location'. 
+    - NEVER extract the country "Japan" as a location.
+    - NEVER extract the city "Bangalore" as a location.
+    - IMPORTANT: Some neighborhood names contain the word "City" (e.g., "Electronic City") or "Street" (e.g., "Church Street"). You MUST extract these as locations.
+    - If a neighborhood is mentioned alongside a cuisine (e.g., "Japanese in Electronic City"), extract BOTH.
     - Return ONLY valid JSON.
     """
 
