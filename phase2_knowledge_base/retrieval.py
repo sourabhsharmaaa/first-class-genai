@@ -43,17 +43,17 @@ def retrieve_restaurants(
         params["cuisine"] = f"%{cuisine}%"
 
     if max_price is not None:
-        # Simplest possible robust cost casting
-        query_str += " AND CAST(NULLIF(REGEXP_REPLACE(approx_costfor_two_people, '[^0-9.]', '', 'g'), '') AS NUMERIC) <= :max_price"
+        # Standard Postgres numeric cast
+        query_str += " AND approx_costfor_two_people::numeric <= :max_price"
         params["max_price"] = max_price
 
     if min_rating is not None:
-        # Use simpler string manipulation for compatibility
-        query_str += " AND CAST(NULLIF(SPLIT_PART(rate, '/', 1), 'NEW') AS NUMERIC) >= :min_rating"
+        # Standard Postgres numeric cast (handles the 4.1/5 case by taking first char if we are lucky, or just use split_part)
+        query_str += " AND (split_part(rate, '/', 1))::numeric >= :min_rating"
         params["min_rating"] = min_rating
 
     if max_rating is not None:
-        query_str += " AND CAST(NULLIF(SPLIT_PART(rate, '/', 1), 'NEW') AS NUMERIC) < :max_rating"
+        query_str += " AND (split_part(rate, '/', 1))::numeric < :max_rating"
         params["max_rating"] = max_rating
 
     # Sorting and Limit
