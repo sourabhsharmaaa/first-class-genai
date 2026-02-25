@@ -43,21 +43,21 @@ def retrieve_restaurants(
         params["cuisine"] = f"%{cuisine}%"
 
     if max_price is not None:
-        # Robustly handle potential string cost with commas
+        # Simplest possible robust cost casting
         query_str += " AND CAST(NULLIF(REGEXP_REPLACE(approx_costfor_two_people, '[^0-9.]', '', 'g'), '') AS NUMERIC) <= :max_price"
         params["max_price"] = max_price
 
     if min_rating is not None:
-        # Robustly handle "4.1/5", "NEW", "-"
-        query_str += " AND CAST(NULLIF(NULLIF(SPLIT_PART(rate, '/', 1), 'NEW'), '-') AS NUMERIC) >= :min_rating"
+        # Use simpler string manipulation for compatibility
+        query_str += " AND CAST(NULLIF(SPLIT_PART(rate, '/', 1), 'NEW') AS NUMERIC) >= :min_rating"
         params["min_rating"] = min_rating
 
     if max_rating is not None:
-        query_str += " AND CAST(NULLIF(NULLIF(SPLIT_PART(rate, '/', 1), 'NEW'), '-') AS NUMERIC) < :max_rating"
+        query_str += " AND CAST(NULLIF(SPLIT_PART(rate, '/', 1), 'NEW') AS NUMERIC) < :max_rating"
         params["max_rating"] = max_rating
 
     # Sorting and Limit
-    query_str += " ORDER BY CASE WHEN SPLIT_PART(rate, '/', 1) ~ '^[0-9.]+$' THEN CAST(SPLIT_PART(rate, '/', 1) AS NUMERIC) ELSE 0 END DESC NULLS LAST LIMIT :limit"
+    query_str += " ORDER BY CASE WHEN rate ~ '^[0-9]' THEN CAST(SPLIT_PART(rate, '/', 1) AS NUMERIC) ELSE 0 END DESC NULLS LAST LIMIT :limit"
     params["limit"] = top_n * 2 # Get more to deduplicate
 
     try:
