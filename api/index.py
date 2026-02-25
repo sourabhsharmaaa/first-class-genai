@@ -25,6 +25,4 @@ app.mount("/api", main_app)
 # By mounting `main_app` to `/api`, we handle the prefix properly.
 
 # To handle both local and Vercel environments seamlessly without mounting prefix woes:
-# We'll just define the app as the imported app, and assume vercel.json forwards without stripping.
-
-app = main_app
+# We mount main_app to /api so that Vercel's path injection aligns perfectly.

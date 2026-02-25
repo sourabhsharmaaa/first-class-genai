@@ -32,15 +32,22 @@ app.add_middleware(
 # Global DataFrame to hold our data in memory
 df = None
 
-@app.on_event("startup")
-def startup_event():
+def get_data():
     global df
+    if df is not None:
+        return df
     logger.info("Loading Zomato dataset into memory...")
     try:
         df = get_zomato_data()
         logger.info(f"Dataset loaded successfully with {len(df)} rows.")
+        return df
     except Exception as e:
         logger.error(f"Failed to load dataset: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load dataset.")
+
+@app.on_event("startup")
+def startup_event():
+    get_data()
 
 class RecommendationRequest(BaseModel):
     search_query: Optional[str] = None
@@ -59,8 +66,7 @@ class RecommendationResponse(BaseModel):
 
 @app.post("/recommend", response_model=RecommendationResponse)
 def get_recommendation(request: RecommendationRequest):
-    if df is None:
-        raise HTTPException(status_code=500, detail="Dataset is not loaded.")
+    df = get_data()
         
     # 1. Parse natural language search query if provided
     parsed_filters = {}
@@ -128,16 +134,14 @@ def health_check():
 
 @app.get("/locations")
 def get_locations():
-    if df is None:
-        raise HTTPException(status_code=500, detail="Dataset is not loaded.")
+    df = get_data()
     # Extract unique locations, filter out acronyms (length <= 3) as requested
     locations = sorted([str(loc).strip() for loc in df['location'].dropna().unique() if len(str(loc).strip()) > 3])
     return {"locations": locations}
 
 @app.get("/cuisines")
 def get_cuisines():
-    if df is None:
-        raise HTTPException(status_code=500, detail="Dataset is not loaded.")
+    df = get_data()
     
     all_cuisines = set()
     for c_str in df['cuisines'].dropna():
