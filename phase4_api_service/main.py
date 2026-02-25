@@ -48,6 +48,7 @@ class RecommendationResponse(BaseModel):
     restaurant_count: int
     recommendation_text: str
     parsed_filters: Optional[dict] = None
+    error: Optional[str] = None
 
 @app.post("/recommend", response_model=RecommendationResponse)
 def get_recommendation(request: RecommendationRequest):
@@ -80,6 +81,8 @@ def get_recommendation(request: RecommendationRequest):
     }
     
     # 3. Retrieve the data from SQL
+    error_msg = None
+    matched_df = pd.DataFrame()
     try:
         matched_df = retrieve_restaurants(
             location=location,
@@ -90,7 +93,8 @@ def get_recommendation(request: RecommendationRequest):
             top_n=request.top_n
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error in data retrieval: {str(e)}")
+        logger.error(f"Error in data retrieval: {e}")
+        error_msg = str(e)
         
     # 4. Extract LLM Recommendation
     try:
@@ -102,7 +106,8 @@ def get_recommendation(request: RecommendationRequest):
         query=request,
         restaurant_count=len(matched_df),
         recommendation_text=llm_response,
-        parsed_filters=parsed_filters
+        parsed_filters=parsed_filters,
+        error=error_msg
     )
 
 @app.get("/health")
