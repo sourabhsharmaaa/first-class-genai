@@ -67,17 +67,23 @@ export default function Home() {
           // Sync UI filters with AI-parsed values
           if (data.parsed_filters) {
             const pf = data.parsed_filters;
+
+            // Location Sync
             if (pf.location) {
               const matchedLoc = locations.find(l => l.toLowerCase() === pf.location.toLowerCase()) ||
                 locations.find(l => l.toLowerCase().includes(pf.location.toLowerCase()));
               if (matchedLoc) {
                 setSelectedLocation(matchedLoc);
               } else {
-                // If the dataset rollback means the location is missing, artificially add it to the dropdown so UI doesn't break
                 if (!locations.includes(pf.location)) setLocations(prev => [pf.location, ...prev]);
                 setSelectedLocation(pf.location);
               }
+            } else if (prompt) {
+              // If user used search box and AI found NO location, clear the old one
+              setSelectedLocation("");
             }
+
+            // Cuisine Sync
             if (pf.cuisine) {
               const matchedCui = cuisines.find(c => c.toLowerCase() === pf.cuisine.toLowerCase()) ||
                 cuisines.find(c => c.toLowerCase().includes(pf.cuisine.toLowerCase()));
@@ -87,16 +93,12 @@ export default function Home() {
                 if (!cuisines.includes(pf.cuisine)) setCuisines(prev => [pf.cuisine, ...prev]);
                 setSelectedCuisine(pf.cuisine);
               }
+            } else if (prompt) {
+              setSelectedCuisine("");
             }
-            if (pf.max_price) setMaxPrice(pf.max_price.toString());
 
-            // Rating Sync: If AI found a min_rating, use it. 
-            // If AI found a max_rating (e.g. "under 4"), lower the dropdown to avoid conflict.
-            if (pf.min_rating) {
-              setMinRating(pf.min_rating.toFixed(1));
-            } else if (pf.max_rating && pf.max_rating <= 4.0) {
-              setMinRating("3.0"); // Lower the bar to show the "under 4" results
-            }
+            if (pf.max_price) setMaxPrice(pf.max_price.toString());
+            if (pf.min_rating) setMinRating(pf.min_rating.toFixed(1));
           }
 
           // Groq returns JSON string
