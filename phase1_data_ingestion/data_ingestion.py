@@ -12,12 +12,12 @@ def get_zomato_data(dataset_name: str = "ManikaSaini/zomato-restaurant-recommend
     logger.info(f"Loading dataset {dataset_name} from Hugging Face...")
     try:
         # Some datasets don't have 'train', they might have 'train' or only 'default'
-        # To be safe, load dataset and take the first split.
-        # Use /tmp for cache dir because Vercel is read-only elsewhere
-        dataset = load_dataset(dataset_name, cache_dir="/tmp/huggingface")
-        # Getting the first split available
+        # Use streaming to avoid downloading the massive 500MB+ dataset inside a 10s Serverless function
+        dataset = load_dataset(dataset_name, streaming=True)
         split_name = list(dataset.keys())[0]
-        df = dataset[split_name].to_pandas()
+        # Take only the first 1500 rows for the free tier demo to keep memory low
+        dataset_head = dataset[split_name].take(1500)
+        df = pd.DataFrame(list(dataset_head))
     except Exception as e:
         logger.error(f"Failed to load dataset: {e}")
         raise
