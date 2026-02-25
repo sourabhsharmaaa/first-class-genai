@@ -127,7 +127,7 @@ def get_locations():
         return {"locations": locations}
     except Exception as e:
         logger.error(f"Failed to fetch locations: {e}")
-        return {"locations": []}
+        return {"locations": [], "error": str(e)}
 
 @app.get("/cuisines")
 def get_cuisines():
@@ -147,4 +147,4 @@ def get_cuisines():
         return {"cuisines": sorted(list(all_cuisines))}
     except Exception as e:
         logger.error(f"Failed to fetch cuisines: {e}")
-        return {"cuisines": []}
+        return {"cuisines": [], "error": str(e)}
