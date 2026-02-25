@@ -70,12 +70,23 @@ export default function Home() {
             if (pf.location) {
               const matchedLoc = locations.find(l => l.toLowerCase() === pf.location.toLowerCase()) ||
                 locations.find(l => l.toLowerCase().includes(pf.location.toLowerCase()));
-              if (matchedLoc) setSelectedLocation(matchedLoc);
+              if (matchedLoc) {
+                setSelectedLocation(matchedLoc);
+              } else {
+                // If the dataset rollback means the location is missing, artificially add it to the dropdown so UI doesn't break
+                if (!locations.includes(pf.location)) setLocations(prev => [pf.location, ...prev]);
+                setSelectedLocation(pf.location);
+              }
             }
             if (pf.cuisine) {
               const matchedCui = cuisines.find(c => c.toLowerCase() === pf.cuisine.toLowerCase()) ||
                 cuisines.find(c => c.toLowerCase().includes(pf.cuisine.toLowerCase()));
-              if (matchedCui) setSelectedCuisine(matchedCui);
+              if (matchedCui) {
+                setSelectedCuisine(matchedCui);
+              } else {
+                if (!cuisines.includes(pf.cuisine)) setCuisines(prev => [pf.cuisine, ...prev]);
+                setSelectedCuisine(pf.cuisine);
+              }
             }
             if (pf.max_price) setMaxPrice(pf.max_price.toString());
 
