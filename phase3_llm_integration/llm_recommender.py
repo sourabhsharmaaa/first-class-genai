@@ -49,54 +49,68 @@ def parse_search_query(query: str, model: str = "llama-3.1-8b-instant") -> dict:
 
 def generate_recommendation_prompt(df: pd.DataFrame, preferences: dict) -> str:
     """
-    Constructs a prompt for stable and customized recommendations.
+    Restores high-quality, detailed prompts for persuasive recommendations.
     """
     if df.empty:
         return '{"summary": "No exact matches found. Try broadening your criteria.", "restaurants": []}'
         
-    prompt = f"Recommend these SPECIFIC restaurants from our Zomato dataset for preferences: {preferences}.\n\n"
-    prompt += "RESTAURANTS TO CHOOSE FROM (USE ONLY THESE):\n"
+    prompt = f"You are an expert food guide. Recommend these SPECIFIC restaurants for preferences: {preferences}.\n\n"
+    prompt += "RESTAURANTS FROM DATABASE:\n"
     
     for _, row in df.iterrows():
         # Clean price string for the prompt
         price = str(row.get('approx_cost(for two people)', 'N/A')).replace('.0', '')
-        prompt += f"- {row.get('name')}: {row.get('rate')} stars, Cost: ₹{price}, Location: {row.get('location')}, Cuisines: {row.get('cuisines')}, Address: {row.get('address')}\n"
+        prompt += f"- Name: {row.get('name')}, Rating: {row.get('rate')}, Cost: ₹{price}, Location: {row.get('location')}, Cuisines: {row.get('cuisines')}, Address: {row.get('address')}\n"
         
     prompt += """
-CRITICAL RULES:
-1. You MUST ONLY use the restaurant names and data provided in the list above. 
-2. NEVER use names like "Joe's Diner", "Sushi Palace", or "Taco Loco" unless they are in the list.
-3. If no restaurants are in the list, state that no matches were found.
-4. Output a detailed 'summary' paragraph (3-4 sentences) that mentions the specific restaurants you picked and why they fit the user's location, cuisine, and budget.
-5. Provide a JSON object with: summary (string) and restaurants (array of objects with: id, name, rating, costForTwo, address, cuisines, aiReason).
+Based on the data above, provide customized, engaging recommendations. 
+CRITICAL QUALITY RULES:
+1. You MUST ONLY use the real names and data provided above. NEVER hallucinate names like "Joe's Diner".
+2. The 'summary' field MUST be a detailed, conversational 3-4 sentence paragraph naming the top spots and why they fit the user's specific request.
+3. For EVERY restaurant, the 'aiReason' MUST be a persuasive 3-4 sentence explanation. Do NOT just say "High rating". Explain why this specific place is a great match.
+4. Preserve the 'cuisines' formatting exactly as shown (e.g. "Pizza, Italian, Cafe" with spaces and commas).
 
-Output strictly valid JSON.
+Output strictly valid JSON:
+{
+  "summary": "Full detailed paragraph...",
+  "restaurants": [
+    {
+      "id": 1,
+      "name": "Exact Name",
+      "rating": 4.5,
+      "costForTwo": "600",
+      "address": "Full Address",
+      "cuisines": "Cuisine 1, Cuisine 2 (KEEP SPACES)",
+      "aiReason": "A detailed 3-4 sentence persuasive explanation..."
+    }
+  ]
+}
 """
     return prompt
 
 def get_llm_recommendation(df: pd.DataFrame, preferences: dict, model: str = "llama-3.1-8b-instant") -> str:
     """
     Calls the Groq API to generate JSON-formatted recommendations.
-    Stability Fix: Returns early if no data to prevent hallucinations.
+    Restored high token limit for quality.
     """
     if not client:
         return '{"summary": "Service unavailable.", "restaurants": []}'
         
     if df is None or df.empty:
-        return '{"summary": "No restaurants found matching your current filters. Please try broadening your search!", "restaurants": []}'
+        return '{"summary": "No restaurants found matching your filters. Try broadening your search!", "restaurants": []}'
         
     prompt = generate_recommendation_prompt(df, preferences)
     
     try:
         chat_completion = client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "You are a local food guide. Output JSON only."},
+                {"role": "system", "content": "You are a helpful local food guide. You only respond in JSON."},
                 {"role": "user", "content": prompt}
             ],
             model=model,
             response_format={"type": "json_object"},
             temperature=0.7,
-            max_tokens=800, # Reduced to speed up response
+            max_tokens=1024, # Restored for detailed content
         )
         return chat_completion.choices[0].message.content
     except Exception as e:
