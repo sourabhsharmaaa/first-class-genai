@@ -44,7 +44,7 @@ def retrieve_restaurants(
         params["cuisine"] = f"%{cuisine}%"
 
     # We fetch a larger chunk to allow for Python-side filtering and deduplication
-    query_str += " LIMIT 200"
+    query_str += " LIMIT 500"
 
     try:
         with engine.connect() as conn:
@@ -91,4 +91,6 @@ def retrieve_restaurants(
         
     except Exception as e:
         logger.error(f"Database query failed: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return pd.DataFrame()
