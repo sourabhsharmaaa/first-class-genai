@@ -29,24 +29,24 @@ def retrieve_restaurants(
     if not DATABASE_URL:
         return pd.DataFrame()
 
-    engine = create_engine(DATABASE_URL)
-    
-    # Base query - only filter on things that are guaranteed to be stable strings in SQL
-    query_str = "SELECT * FROM restaurants WHERE 1=1"
-    params = {}
-
-    if location:
-        query_str += " AND location ILIKE :location"
-        params["location"] = f"%{location}%"
-
-    if cuisine:
-        query_str += " AND cuisines ILIKE :cuisine"
-        params["cuisine"] = f"%{cuisine}%"
-
-    # We fetch a larger chunk to allow for Python-side filtering and deduplication
-    query_str += " LIMIT 500"
-
     try:
+        engine = create_engine(DATABASE_URL)
+        
+        # Base query - simple SQL to avoid syntax errors
+        query_str = "SELECT * FROM restaurants WHERE 1=1"
+        params = {}
+
+        if location:
+            query_str += " AND location ILIKE :location"
+            params["location"] = f"%{location}%"
+
+        if cuisine:
+            query_str += " AND cuisines ILIKE :cuisine"
+            params["cuisine"] = f"%{cuisine}%"
+
+        # Fetch more rows for Python-side processing
+        query_str += " LIMIT 500"
+
         with engine.connect() as conn:
             df = pd.read_sql(text(query_str), conn, params=params)
         
@@ -91,6 +91,4 @@ def retrieve_restaurants(
         
     except Exception as e:
         logger.error(f"Database query failed: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
         return pd.DataFrame()
