@@ -22,7 +22,7 @@ def check_health():
     try:
         res = client.get("/health")
         print(f"Health Check: {res.json()}")
-        return res.json().get("dataset_loaded", False)
+        return res.json().get("db_connected", False)
     except Exception as e:
         print(f"Health Check failed: {e}")
         return False
