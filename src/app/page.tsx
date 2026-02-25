@@ -67,8 +67,14 @@ export default function Home() {
           // Sync UI filters with AI-parsed values
           if (data.parsed_filters) {
             const pf = data.parsed_filters;
-            if (pf.location) setSelectedLocation(pf.location);
-            if (pf.cuisine) setSelectedCuisine(pf.cuisine);
+            if (pf.location) {
+              const matchedLoc = locations.find(l => l.toLowerCase() === pf.location.toLowerCase());
+              setSelectedLocation(matchedLoc || pf.location);
+            }
+            if (pf.cuisine) {
+              const matchedCui = cuisines.find(c => c.toLowerCase() === pf.cuisine.toLowerCase());
+              setSelectedCuisine(matchedCui || pf.cuisine);
+            }
             if (pf.max_price) setMaxPrice(pf.max_price.toString());
 
             // Rating Sync: If AI found a min_rating, use it. 

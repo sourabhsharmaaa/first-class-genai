@@ -78,9 +78,9 @@ def get_recommendation(request: RecommendationRequest):
         logger.info(f"Parsed filters: {parsed_filters}")
 
     # 2. Merge filters (Dropdowns and Parsed values)
-    # Strategy: Take the most restrictive value if both are present.
-    location = request.location or parsed_filters.get("location")
-    cuisine = request.cuisine or parsed_filters.get("cuisine")
+    # Strategy: The typed search query (parsed_filters) should OVERRIDE the dropdowns if there is a conflict.
+    location = parsed_filters.get("location") or request.location
+    cuisine = parsed_filters.get("cuisine") or request.cuisine
     
     # For price: take the MINIMUM (more restrictive)
     prices = [v for v in [request.max_price, parsed_filters.get("max_price")] if v is not None]
