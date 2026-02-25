@@ -16,10 +16,13 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "phase4_api_servic
 # Import the main FastAPI app
 from phase4_api_service.main import app as main_app
 
-# Vercel handles requests to /api/index.py as the entry point for /api/*.
-# We expose main_app directly as 'app' so Vercel can find it.
-app = main_app
+# Create a wrapper app to handle the /api prefix from Vercel
+app = FastAPI()
 
-# Note: We no longer need to mount to /api because main_app defines routes
-# like /locations, and Vercel passes the path after /api/ to the function.
-# E.g. /api/locations -> main_app receives /locations
+# Mount the main logic under /api to match Vercel's routing
+app.mount("/api", main_app)
+
+# Fallback for /api itself
+@app.get("/api")
+def api_root():
+    return {"message": "AI Recommender API is running"}
