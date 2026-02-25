@@ -24,13 +24,14 @@ def retrieve_restaurants(
 ) -> pd.DataFrame:
     """
     Filters the Zomato dataset using a Supabase PostgreSQL query.
+    Stability Fix: Performs location/cuisine filtering in SQL and numeric filtering in Python.
     """
     if not DATABASE_URL:
         return pd.DataFrame()
 
     engine = create_engine(DATABASE_URL)
     
-    # Base query
+    # Base query - only filter on things that are guaranteed to be stable strings in SQL
     query_str = "SELECT * FROM restaurants WHERE 1=1"
     params = {}
 
@@ -42,33 +43,43 @@ def retrieve_restaurants(
         query_str += " AND cuisines ILIKE :cuisine"
         params["cuisine"] = f"%{cuisine}%"
 
-    if max_price is not None:
-        # Standard Postgres numeric cast
-        query_str += " AND approx_costfor_two_people::numeric <= :max_price"
-        params["max_price"] = max_price
-
-    if min_rating is not None:
-        # Standard Postgres numeric cast (handles the 4.1/5 case by taking first char if we are lucky, or just use split_part)
-        query_str += " AND (split_part(rate, '/', 1))::numeric >= :min_rating"
-        params["min_rating"] = min_rating
-
-    if max_rating is not None:
-        query_str += " AND (split_part(rate, '/', 1))::numeric < :max_rating"
-        params["max_rating"] = max_rating
-
-    # Sorting and Limit
-    query_str += " ORDER BY rate DESC NULLS LAST LIMIT :limit"
-    params["limit"] = top_n * 2 # Get more to deduplicate
+    # We fetch a larger chunk to allow for Python-side filtering and deduplication
+    query_str += " LIMIT 200"
 
     try:
         with engine.connect() as conn:
             df = pd.read_sql(text(query_str), conn, params=params)
         
-        # Deduplicate results locally by name (SQL DISTINCT is hard on name vs other columns)
+        if df.empty:
+            return df
+
+        # --- Stable Python-side Filtering ---
+        # 1. Clean Rating (handles "4.1/5", "NEW", "-")
+        if 'rate' in df.columns:
+            df['rate_numeric'] = df['rate'].astype(str).str.split('/').str[0].str.strip()
+            df['rate_numeric'] = pd.to_numeric(df['rate_numeric'], errors='coerce')
+            
+            if min_rating is not None:
+                df = df[df['rate_numeric'] >= min_rating]
+            if max_rating is not None:
+                df = df[df['rate_numeric'] < max_rating]
+
+        # 2. Clean Cost (handles "1,200", strings)
+        if 'approx_costfor_two_people' in df.columns:
+            df['cost_numeric'] = df['approx_costfor_two_people'].astype(str).str.replace(',', '', regex=False)
+            df['cost_numeric'] = pd.to_numeric(df['cost_numeric'], errors='coerce')
+            
+            if max_price is not None:
+                df = df[df['cost_numeric'] <= max_price]
+
+        # 3. Final Cleaning & Deduplication
         df = df.drop_duplicates(subset=['name'], keep='first')
         
+        # Sorting by rating
+        if 'rate_numeric' in df.columns:
+            df = df.sort_values(by='rate_numeric', ascending=False)
+        
         # Consistent column naming for expected output
-        # (The uploader script converted them to lower_snake_case)
         rename_map = {
             'approx_costfor_two_people': 'approx_cost(for two people)',
             'listed_intype': 'listed_in(type)',
@@ -80,33 +91,4 @@ def retrieve_restaurants(
         
     except Exception as e:
         logger.error(f"Database query failed: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
         return pd.DataFrame()
-
-if __name__ == "__main__":
-    logger.info("Loading data to test retrieval...")
-    data = get_zomato_data()
-    
-    # Test specific retrieval
-    test_loc = "BTM"
-    test_cuisine = "North Indian"
-    test_price = 800
-    test_rating = 4.0
-    
-    logger.info(f"Searching for: Location={test_loc}, Cuisine={test_cuisine}, Max Price={test_price}, Min Rating={test_rating}")
-    results = retrieve_restaurants(
-        df=data,
-        location=test_loc,
-        cuisine=test_cuisine,
-        max_price=test_price,
-        min_rating=test_rating,
-        top_n=3
-    )
-    
-    if not results.empty:
-        print("\nTop Matches found:")
-        for idx, row in results.iterrows():
-            print(f"- {row['name']} ({row['rate']}⭐) | {row['location']} | {row['cuisines']} | ₹{row['approx_cost(for two people)']}")
-    else:
-        print("\nNo matching restaurants found.")
