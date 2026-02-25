@@ -14,6 +14,15 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     logger.warning("DATABASE_URL not found in environment variables!")
 
+# Persistent engine to be reused across calls (SQLAlchemy handles pooling)
+_engine = None
+
+def get_engine():
+    global _engine
+    if _engine is None:
+        _engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    return _engine
+
 def retrieve_restaurants(
     location: str = None, 
     cuisine: str = None, 
@@ -30,7 +39,7 @@ def retrieve_restaurants(
         return pd.DataFrame()
 
     try:
-        engine = create_engine(DATABASE_URL)
+        engine = get_engine()
         
         # Base query - simple SQL to avoid syntax errors
         query_str = "SELECT * FROM restaurants WHERE 1=1"
@@ -44,8 +53,8 @@ def retrieve_restaurants(
             query_str += " AND cuisines ILIKE :cuisine"
             params["cuisine"] = f"%{cuisine}%"
 
-        # Fetch more rows for Python-side processing
-        query_str += " LIMIT 500"
+        # Fetch a reasonable chunk for processing
+        query_str += " LIMIT 150"
 
         with engine.connect() as conn:
             df = pd.read_sql(text(query_str), conn, params=params)

@@ -18,33 +18,23 @@ except Exception as e:
     logger.warning(f"Failed to initialize Groq client: {e}")
     client = None
 
+from functools import lru_cache
+
+@lru_cache(maxsize=100)
 def parse_search_query(query: str, model: str = "llama-3.1-8b-instant") -> dict:
     """
     Parses a natural language search query into structured filters using Groq.
+    Cached to speed up repeated queries.
     """
     if not client or not query:
         return {}
 
-    prompt = f"""
-    Parse the following user search query for restaurant recommendations into a structured JSON object.
-    Query: "{query}"
-
-    Extract:
-    1. location (string, e.g., "Indiranagar")
-    2. cuisine (string, e.g., "Burger")
-    3. max_price (number, e.g., 2000)
-    4. min_rating (number, e.g., 4.0) - Use this if user says "above 4 stars" or "4 stars and up"
-    5. max_rating (number, e.g., 4.0) - Use this if user says "under 4 stars" or "less than 4 stars"
-
-    Rules:
-    - If a field is not mentioned, return null for that field.
-    - Return ONLY valid JSON.
-    """
+    prompt = f'Parse this query into JSON: "{query}". Extract: location, cuisine, max_price, min_rating. Return ONLY valid JSON.'
 
     try:
         completion = client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "You are a specialized query parser. You only output JSON."},
+                {"role": "system", "content": "You output JSON only."},
                 {"role": "user", "content": prompt}
             ],
             model=model,
@@ -59,57 +49,23 @@ def parse_search_query(query: str, model: str = "llama-3.1-8b-instant") -> dict:
 
 def generate_recommendation_prompt(df: pd.DataFrame, preferences: dict) -> str:
     """
-    Constructs a prompt containing user preferences and the retrieved restaurants.
+    Constructs a concise prompt for faster generation.
     """
-    prompt = f"You are an expert food critic and local guide. User preferences: {preferences}.\n\n"
+    prompt = f"Recommend these restaurants for preferences: {preferences}.\n\n"
     
     if df.empty:
-        prompt += 'No matches. Output strictly JSON with key "restaurants": {"restaurants": [{"id": 1, "name": "Broaden your search", "rating": 0, "costForTwo": "N/A", "aiReason": "No exact matches found. Try changing your filters."}]}'
-        return prompt
+        return '{"summary": "No matches found.", "restaurants": []}'
         
-    prompt += "Top restaurants retrieved from our database:\n\n"
-    
-    for idx, row in df.iterrows():
-        name = row.get('name', 'Unknown')
-        rating = row.get('rate', 'N/A')
-        loc = row.get('location', 'Unknown Location')
-        address = row.get('address', 'Unknown Address')
-        cuisines = row.get('cuisines', 'Unknown Cuisine')
-        price = row.get('approx_cost(for two people)', 'Unknown Price')
-        
-        prompt += f"- Name: {name}, Rating: {rating}, Cost: {price}, Loc: {loc}, Address: {address}, Cuisine: {cuisines}\n"
+    for _, row in df.iterrows():
+        prompt += f"- {row.get('name')}: {row.get('rate')} stars, ₹{row.get('approx_cost(for two people)')}, Location: {row.get('location')}, Cuisines: {row.get('cuisines')}\n"
         
     prompt += """
-Based on this data, provide customized, engaging recommendations for ALL the restaurants provided above.
-You MUST output strictly valid JSON. Do NOT output just one restaurant. Output a JSON object containing a global 'summary' text, followed by an array of objects for EVERY restaurant in the retrieved data. 
-
-The 'summary' field MUST be a highly detailed, conversational paragraph (2-3 sentences) that explicitly NAMES the top restaurants being recommended. It must specifically mention the user's requested location, cuisines, and pricing, summarizing why these specific places are great choices altogether. Do NOT provide a generic summary.
-
-Use the following format:
+Output strictly valid JSON with a detailed 'summary' paragraph and an array of 'restaurants' with: id, name, rating, costForTwo, address, cuisines, and 'aiReason' (2-3 sentences).
+Example:
 {
-  "summary": "You're in for a treat in Basavanagudi with Mysuru Coffee Thindi and 36th Cross Coffee Mane, two fantastic spots that serve up delicious coffee at budget-friendly prices...",
-  "restaurants": [
-    {
-      "id": 1,
-      "name": "Restaurant 1",
-      "rating": 4.5,
-      "costForTwo": "800",
-      "address": "123 Food Street, Jayanagar",
-      "cuisines": "South Indian, Cafe",
-      "aiReason": "A detailed, engaging 3-4 sentence explanation of why this restaurant is a great match for the user's specific location, cuisine, price, and rating preferences. Be highly specific and persuasive."
-    },
-    {
-      "id": 2,
-      "name": "Restaurant 2",
-      "rating": 4.2,
-      "costForTwo": "1200",
-      "address": "456 Main Road, Indiranagar",
-      "cuisines": "Italian, Continental",
-      "aiReason": "A detailed, engaging 3-4 sentence explanation of why this restaurant is a great match for the user's specific location, cuisine, price, and rating preferences. Be highly specific and persuasive."
-    }
-  ]
+  "summary": "...",
+  "restaurants": [{"id": 1, "name": "...", "aiReason": "..."}]
 }
-Keep the output strictly as JSON.
 """
     return prompt
 
@@ -121,26 +77,22 @@ def get_llm_recommendation(df: pd.DataFrame, preferences: dict, model: str = "ll
         return '{"restaurants": []}'
         
     prompt = generate_recommendation_prompt(df, preferences)
-    logger.info("Sending prompt to Groq API...")
     
     try:
         chat_completion = client.chat.completions.create(
             messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful local food guide. You only respond in JSON."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
+                {"role": "system", "content": "You are a local food guide. Output JSON only."},
+                {"role": "user", "content": prompt}
             ],
             model=model,
             response_format={"type": "json_object"},
             temperature=0.7,
-            max_tokens=1024,
+            max_tokens=800, # Reduced to speed up response
         )
         return chat_completion.choices[0].message.content
+    except Exception as e:
+        logger.error(f"Error calling Groq API: {e}")
+        return '{"restaurants": []}'
     except Exception as e:
         logger.error(f"Error calling Groq API: {e}")
         return '{"restaurants": []}'
