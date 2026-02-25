@@ -77,9 +77,13 @@ Output strictly valid JSON.
 def get_llm_recommendation(df: pd.DataFrame, preferences: dict, model: str = "llama-3.1-8b-instant") -> str:
     """
     Calls the Groq API to generate JSON-formatted recommendations.
+    Stability Fix: Returns early if no data to prevent hallucinations.
     """
     if not client:
-        return '{"restaurants": []}'
+        return '{"summary": "Service unavailable.", "restaurants": []}'
+        
+    if df is None or df.empty:
+        return '{"summary": "No restaurants found matching your current filters. Please try broadening your search!", "restaurants": []}'
         
     prompt = generate_recommendation_prompt(df, preferences)
     

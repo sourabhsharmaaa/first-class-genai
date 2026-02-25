@@ -53,8 +53,8 @@ def retrieve_restaurants(
             query_str += " AND cuisines ILIKE :cuisine"
             params["cuisine"] = f"%{cuisine}%"
 
-        # Fetch a reasonable chunk for processing
-        query_str += " LIMIT 150"
+        # Fetch a sufficient buffer for Python-side filtering (price/rating)
+        query_str += " LIMIT 500"
 
         with engine.connect() as conn:
             df = pd.read_sql(text(query_str), conn, params=params)

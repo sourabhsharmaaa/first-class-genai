@@ -92,6 +92,8 @@ def get_recommendation(request: RecommendationRequest):
             logger.error(f"Retrieval error: {e}")
             error_msg = str(e)
             
+        logger.info(f"Retrieved {len(matched_df)} restaurants for query")
+            
         # 4. Get LLM Recommendation
         try:
             llm_response = get_llm_recommendation(matched_df, {
