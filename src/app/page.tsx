@@ -70,12 +70,12 @@ export default function Home() {
             if (pf.location) {
               const matchedLoc = locations.find(l => l.toLowerCase() === pf.location.toLowerCase()) ||
                 locations.find(l => l.toLowerCase().includes(pf.location.toLowerCase()));
-              setSelectedLocation(matchedLoc || pf.location);
+              if (matchedLoc) setSelectedLocation(matchedLoc);
             }
             if (pf.cuisine) {
               const matchedCui = cuisines.find(c => c.toLowerCase() === pf.cuisine.toLowerCase()) ||
                 cuisines.find(c => c.toLowerCase().includes(pf.cuisine.toLowerCase()));
-              setSelectedCuisine(matchedCui || pf.cuisine);
+              if (matchedCui) setSelectedCuisine(matchedCui);
             }
             if (pf.max_price) setMaxPrice(pf.max_price.toString());
 
