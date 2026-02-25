@@ -107,7 +107,13 @@ def get_recommendation(request: RecommendationRequest):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "db_connected": engine is not None}
+    db_url_status = "present" if DATABASE_URL else "MISSING"
+    return {
+        "status": "ok", 
+        "db_connected": engine is not None,
+        "db_url": db_url_status,
+        "engine_created": engine is not None
+    }
 
 @app.get("/locations")
 def get_locations():

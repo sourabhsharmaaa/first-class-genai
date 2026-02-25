@@ -13,19 +13,13 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "phase2_knowledge_
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "phase3_llm_integration"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "phase4_api_service"))
 
-# Import the main FastAPI app and its startup events
+# Import the main FastAPI app
 from phase4_api_service.main import app as main_app
 
-app = FastAPI(title="Vercel API Gateway")
+# Vercel handles requests to /api/index.py as the entry point for /api/*.
+# We expose main_app directly as 'app' so Vercel can find it.
+app = main_app
 
-# Vercel relies on the app instance directly
-# We mount the imported app into this root instance to maintain exact routes
-# Alternatively, we can just expose the imported app directly as the serverless handler
-app.mount("/api", main_app)
-
-# Note: Vercel standard routing maps `api/index.py` to `/api/*` based on vercel.json rewrites.
-# If `vercel.json` rewrites `/api/(.*)` to `api/index.py`, then Vercel passes the request as `/api/...` to the FastAPI app.
-# By mounting `main_app` to `/api`, we handle the prefix properly.
-
-# To handle both local and Vercel environments seamlessly without mounting prefix woes:
-# We mount main_app to /api so that Vercel's path injection aligns perfectly.
+# Note: We no longer need to mount to /api because main_app defines routes
+# like /locations, and Vercel passes the path after /api/ to the function.
+# E.g. /api/locations -> main_app receives /locations
