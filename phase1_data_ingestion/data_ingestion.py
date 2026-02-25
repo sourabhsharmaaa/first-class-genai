@@ -13,7 +13,8 @@ def get_zomato_data(dataset_name: str = "ManikaSaini/zomato-restaurant-recommend
     try:
         # Some datasets don't have 'train', they might have 'train' or only 'default'
         # To be safe, load dataset and take the first split.
-        dataset = load_dataset(dataset_name)
+        # Use /tmp for cache dir because Vercel is read-only elsewhere
+        dataset = load_dataset(dataset_name, cache_dir="/tmp/huggingface")
         # Getting the first split available
         split_name = list(dataset.keys())[0]
         df = dataset[split_name].to_pandas()

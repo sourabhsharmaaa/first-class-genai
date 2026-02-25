@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import sys
 import os
 
+# Set HF_HOME environment variable to use /tmp because Vercel Serverless filesystem is read-only
+os.environ["HF_HOME"] = "/tmp/huggingface"
+
 # Ensure the root directory and child phase directories are in the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "phase1_data_ingestion"))
