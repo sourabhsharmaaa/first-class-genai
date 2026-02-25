@@ -34,7 +34,7 @@ def parse_search_query(query: str, model: str = "llama-3.1-8b-instant") -> dict:
     Query: "{query}"
 
     Extract:
-    1. location (Specific Bangalore locality, e.g., "Indiranagar", "Koramangala", "BTM", "Church Street", "MG Road", "JP Nagar")
+    1. location (Specific Bangalore locality, e.g., "Indiranagar", "Koramangala", "BTM", "Church Street", "MG Road", "JP Nagar", "Electronic City")
     2. cuisine (e.g., "Japanese", "North Indian")
     3. max_price (number)
     4. min_rating (number)
@@ -42,7 +42,7 @@ def parse_search_query(query: str, model: str = "llama-3.1-8b-instant") -> dict:
     CRITICAL RULES:
     - ONLY extract specific Bangalore localities for 'location'. 
     - NEVER extract countries (like "Japan") or cities (like "Bangalore") as the location.
-    - If the user says "Japanese", extract "Japanese" as cuisine and return null for location.
+    - Important: Do not confuse cuisines with locations. For example, in "Japanese in Electronic City", "Japanese" is the cuisine and "Electronic City" is the location.
     - Return ONLY valid JSON.
     """
 
