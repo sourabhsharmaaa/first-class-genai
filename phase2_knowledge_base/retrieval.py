@@ -43,19 +43,19 @@ def retrieve_restaurants(
         params["cuisine"] = f"%{cuisine}%"
 
     if max_price is not None:
-        query_str += " AND approx_costfor_two_people <= :max_price"
+        query_str += " AND CAST(approx_costfor_two_people AS NUMERIC) <= :max_price"
         params["max_price"] = max_price
 
     if min_rating is not None:
-        query_str += " AND rate >= :min_rating"
+        query_str += " AND CAST(rate AS NUMERIC) >= :min_rating"
         params["min_rating"] = min_rating
 
     if max_rating is not None:
-        query_str += " AND rate < :max_rating"
+        query_str += " AND CAST(rate AS NUMERIC) < :max_rating"
         params["max_rating"] = max_rating
 
     # Sorting and Limit
-    query_str += " ORDER BY rate DESC NULLS LAST LIMIT :limit"
+    query_str += " ORDER BY CAST(rate AS NUMERIC) DESC NULLS LAST LIMIT :limit"
     params["limit"] = top_n * 2 # Get more to deduplicate
 
     try:
