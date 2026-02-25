@@ -43,7 +43,9 @@ def get_data():
         return df
     except Exception as e:
         logger.error(f"Failed to load dataset: {e}")
-        raise HTTPException(status_code=500, detail="Failed to load dataset.")
+        import traceback
+        err_msg = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to load dataset. Error: {str(e)} | Trace: {err_msg}")
 
 @app.on_event("startup")
 def startup_event():
