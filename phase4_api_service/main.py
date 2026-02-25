@@ -1,6 +1,7 @@
 import sys
 import os
 import logging
+import pandas as pd
 from pydantic import BaseModel
 from typing import Optional, List
 from fastapi import FastAPI, HTTPException
@@ -10,19 +11,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Add previous phases to sys.path to easily import the logic
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'phase2_knowledge_base'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'phase3_llm_integration'))
+# Add previous phases to sys.path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(BASE_DIR, 'phase2_knowledge_base'))
+sys.path.append(os.path.join(BASE_DIR, 'phase3_llm_integration'))
 
-from retrieval import retrieve_restaurants
-from llm_recommender import get_llm_recommendation, parse_search_query
+try:
+    from retrieval import retrieve_restaurants
+    from llm_recommender import get_llm_recommendation, parse_search_query
+except ImportError as e:
+    logging.error(f"Import Error: {e}")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AI Restaurant Recommendation API", version="1.0")
 
-# Enable CORS for Next.js Frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -52,56 +56,46 @@ class RecommendationResponse(BaseModel):
 
 @app.post("/recommend", response_model=RecommendationResponse)
 def get_recommendation(request: RecommendationRequest):
-    # 1. Parse natural language search query if provided
     parsed_filters = {}
-    if request.search_query:
-        logger.info(f"Parsing search query: {request.search_query}")
-        parsed_filters = parse_search_query(request.search_query)
-        logger.info(f"Parsed filters: {parsed_filters}")
-
-    # 2. Merge filters (Dropdowns and Parsed values)
-    location = parsed_filters.get("location") or request.location
-    cuisine = parsed_filters.get("cuisine") or request.cuisine
-    
-    prices = [v for v in [request.max_price, parsed_filters.get("max_price")] if v is not None]
-    max_price = min(prices) if prices else None
-
-    min_ratings = [v for v in [request.min_rating, parsed_filters.get("min_rating")] if v is not None]
-    min_rating = max(min_ratings) if min_ratings else None
-    
-    max_ratings = [v for v in [request.max_rating, parsed_filters.get("max_rating")] if v is not None]
-    max_rating = min(max_ratings) if max_ratings else None
-
-    preferences = {
-        "location": location,
-        "cuisine": cuisine,
-        "max_price": max_price,
-        "min_rating": min_rating,
-        "max_rating": max_rating
-    }
-    
-    # 3. Retrieve the data from SQL
     error_msg = None
     matched_df = pd.DataFrame()
+    llm_response = '{"restaurants": []}'
+    
     try:
-        matched_df = retrieve_restaurants(
-            location=location,
-            cuisine=cuisine,
-            max_price=max_price,
-            min_rating=min_rating,
-            max_rating=max_rating,
-            top_n=request.top_n
-        )
+        # 1. Parse natural language search query
+        if request.search_query:
+            try:
+                parsed_filters = parse_search_query(request.search_query)
+            except Exception as e:
+                logger.error(f"Query parsing error: {e}")
+
+        # 2. Merge filters
+        location = parsed_filters.get("location") or request.location
+        cuisine = parsed_filters.get("cuisine") or request.cuisine
+        
+        # 3. Retrieve the data
+        try:
+            matched_df = retrieve_restaurants(
+                location=location,
+                cuisine=cuisine,
+                max_price=request.max_price, # Use raw request for now to keep it simple
+                min_rating=request.min_rating,
+                top_n=request.top_n or 5
+            )
+        except Exception as e:
+            logger.error(f"Retrieval error: {e}")
+            error_msg = str(e)
+            
+        # 4. Get LLM Recommendation
+        try:
+            llm_response = get_llm_recommendation(matched_df, {"location": location, "cuisine": cuisine})
+        except Exception as e:
+            logger.error(f"LLM error: {e}")
+            
     except Exception as e:
-        logger.error(f"Error in data retrieval: {e}")
+        logger.error(f"General recommendation error: {e}")
         error_msg = str(e)
-        
-    # 4. Extract LLM Recommendation
-    try:
-        llm_response = get_llm_recommendation(matched_df, preferences)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error in LLM generation: {str(e)}")
-        
+
     return RecommendationResponse(
         query=request,
         restaurant_count=len(matched_df),
@@ -112,44 +106,26 @@ def get_recommendation(request: RecommendationRequest):
 
 @app.get("/health")
 def health_check():
-    db_url_status = "present" if DATABASE_URL else "MISSING"
-    return {
-        "status": "ok", 
-        "db_connected": engine is not None,
-        "db_url": db_url_status,
-        "engine_created": engine is not None
-    }
+    return {"status": "ok", "db": DATABASE_URL is not None}
 
 @app.get("/locations")
 def get_locations():
-    if not engine:
-        return {"locations": []}
     try:
         with engine.connect() as conn:
-            # Query distinct locations with length > 3
-            res = conn.execute(text("SELECT DISTINCT location FROM restaurants WHERE length(location) > 3 ORDER BY location ASC"))
-            locations = [row[0] for row in res if row[0]]
-        return {"locations": locations}
+            res = conn.execute(text("SELECT DISTINCT location FROM restaurants WHERE location IS NOT NULL ORDER BY location ASC LIMIT 100"))
+            return {"locations": [row[0] for row in res]}
     except Exception as e:
-        logger.error(f"Failed to fetch locations: {e}")
         return {"locations": [], "error": str(e)}
 
 @app.get("/cuisines")
 def get_cuisines():
-    if not engine:
-        return {"cuisines": []}
     try:
         with engine.connect() as conn:
-            # Postgres supports strings split and distinct
-            # But the easiest way is to fetch the column and set-split in Python for now
-            res = conn.execute(text("SELECT DISTINCT cuisines FROM restaurants WHERE cuisines IS NOT NULL"))
-            all_cuisines = set()
+            res = conn.execute(text("SELECT DISTINCT cuisines FROM restaurants WHERE cuisines IS NOT NULL LIMIT 100"))
+            c = set()
             for row in res:
-                for c in str(row[0]).split(','):
-                    c_clean = c.strip()
-                    if c_clean:
-                        all_cuisines.add(c_clean)
-        return {"cuisines": sorted(list(all_cuisines))}
+                for x in str(row[0]).split(','):
+                    if x.strip(): c.add(x.strip())
+            return {"cuisines": sorted(list(c))}
     except Exception as e:
-        logger.error(f"Failed to fetch cuisines: {e}")
         return {"cuisines": [], "error": str(e)}
