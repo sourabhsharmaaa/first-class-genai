@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  --color-zomato: #E23744;
+  --color-zomato-light: #FFEBED;
+}
+
+body {
+  background-color: #F8F8F8;
+  color: #1C1C1C;
+  font-family: system-ui, -apple-system, sans-serif;
+}

@@ -1,0 +1,73 @@
+
+> phase7_nextjs_ui@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.10:3000
+
+✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+✓ Ready in 560ms
+ HEAD / 200 in 2.3s (compile: 2.2s, render: 102ms)
+ GET / 200 in 46ms (compile: 4ms, render: 42ms)
+ GET / 200 in 289ms (compile: 212ms, render: 77ms)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+✓ Compiled in 48ms
+ GET / 200 in 306ms (compile: 194ms, render: 111ms)
+ GET / 200 in 50ms (compile: 13ms, render: 37ms)
+⨯ upstream image response failed for https://images.unsplash.com/photo-1607455519846-ec5c5e4b8a2c?auto=format&fit=crop&q=80&w=800 404
+ GET / 200 in 69ms (compile: 17ms, render: 52ms)
+⨯ upstream image response failed for https://images.unsplash.com/photo-1558979156-ebfdd0b4491d?auto=format&fit=crop&q=80&w=800 404
+ GET / 200 in 56ms (compile: 9ms, render: 48ms)
+⨯ upstream image response failed for https://images.unsplash.com/photo-1596434411474-2f3e3f4b1c2d?auto=format&fit=crop&q=80&w=800 404
+⨯ upstream image response failed for https://images.unsplash.com/photo-1596434411474-2f3e3f4b1c2d?auto=format&fit=crop&q=80&w=800 404
+⨯ upstream image response failed for https://images.unsplash.com/photo-1503026344774-bcfabbit8e0f?auto=format&fit=crop&q=80&w=800 404
+✓ Compiled in 176ms
+ GET / 200 in 458ms (compile: 351ms, render: 107ms)
+ GET / 200 in 57ms (compile: 19ms, render: 39ms)
+ GET / 200 in 79ms (compile: 12ms, render: 67ms)
+✓ Compiled in 30ms
+ GET / 200 in 146ms (compile: 75ms, render: 71ms)
+ GET / 200 in 52ms (compile: 13ms, render: 40ms)
+✓ Compiled in 71ms
+ GET / 200 in 159ms (compile: 88ms, render: 71ms)
+ GET / 200 in 53ms (compile: 14ms, render: 40ms)
+✓ Compiled in 31ms
+ GET / 200 in 196ms (compile: 118ms, render: 78ms)
+ GET / 200 in 53ms (compile: 16ms, render: 37ms)
+ GET / 200 in 50ms (compile: 12ms, render: 38ms)
+ GET / 200 in 49ms (compile: 11ms, render: 37ms)
+✓ Compiled in 45ms
+ GET / 200 in 189ms (compile: 107ms, render: 82ms)
+✓ Compiled in 119ms
+ GET / 200 in 143ms (compile: 71ms, render: 73ms)
+✓ Compiled in 56ms
+ GET / 200 in 141ms (compile: 73ms, render: 68ms)
+ GET / 200 in 211ms (compile: 140ms, render: 71ms)
+⨯ Error: Invalid src prop (https://ui-avatars.com/api/?name=Rahul+S&background=FDA4AF&color=fff) on `next/image`, hostname "ui-avatars.com" is not configured under images in your `next.config.js`
+See more info: https://nextjs.org/docs/messages/next-image-unconfigured-host
+    at ignore-listed frames {
+  digest: '2327274791@E231'
+}
+ GET / 500 in 184ms (compile: 44ms, render: 140ms)
+⨯ Error: Invalid src prop (https://ui-avatars.com/api/?name=Rahul+S&background=FDA4AF&color=fff) on `next/image`, hostname "ui-avatars.com" is not configured under images in your `next.config.js`
+See more info: https://nextjs.org/docs/messages/next-image-unconfigured-host
+    at ignore-listed frames {
+  digest: '2327274791@E231'
+}
+ GET / 500 in 60ms (compile: 9ms, render: 51ms)
+⚠ Found a change in next.config.mjs. Restarting the server to apply the changes...
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.10:3000
+
+✓ Starting...
+✓ Ready in 588ms
+ GET / 200 in 446ms (compile: 305ms, render: 141ms)
+ GET / 200 in 812ms (compile: 706ms, render: 106ms)
+[?25h
