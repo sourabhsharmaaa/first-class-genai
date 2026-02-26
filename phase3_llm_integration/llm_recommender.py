@@ -35,7 +35,7 @@ def parse_search_query(query: str, model: str = "llama-3.1-8b-instant") -> dict:
 
     Extract:
     1. location (Specific Bangalore neighborhood/area. E.g., "Indiranagar", "Koramangala", "BTM", "Electronic City", "Church Street", "HSR")
-    2. cuisine (E.g., "Japanese", "Pizza", "North Indian")
+    2. cuisine (E.g., "Japanese", "Pizza", "North Indian", "Coffee", "Cafe", "Desserts")
     3. max_price (Integer number)
     4. min_rating (Float number)
 
