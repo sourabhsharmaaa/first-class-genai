@@ -129,7 +129,7 @@ def get_llm_recommendation(df: pd.DataFrame, preferences: dict, model: str = "ll
             model=model,
             response_format={"type": "json_object"},
             temperature=0.7,
-            max_tokens=1024, # Restored for detailed content
+            max_tokens=3000, # Increased token limit to allow longer output (all 5 recommendations)
         )
         return chat_completion.choices[0].message.content
     except Exception as e:
