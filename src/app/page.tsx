@@ -192,7 +192,10 @@ export default function Home() {
               <select
                 className="appearance-none bg-white border text-sm md:text-base border-gray-200 rounded-full pl-4 pr-10 py-2 cursor-pointer hover:bg-gray-50 hover:shadow-sm transition-all focus:outline-none"
                 value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
+                onChange={(e) => {
+                  setSelectedLocation(e.target.value);
+                  setPrompt("");
+                }}
               >
                 <option value="">Select locality...</option>
                 {locations.map(loc => (
@@ -207,7 +210,10 @@ export default function Home() {
               <select
                 className="appearance-none bg-white border text-sm md:text-base border-gray-200 rounded-full pl-4 pr-10 py-2 cursor-pointer hover:bg-gray-50 hover:shadow-sm transition-all focus:outline-none"
                 value={selectedCuisine}
-                onChange={(e) => setSelectedCuisine(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCuisine(e.target.value);
+                  setPrompt("");
+                }}
               >
                 <option value="">Select cuisines...</option>
                 {cuisines.map(c => (
