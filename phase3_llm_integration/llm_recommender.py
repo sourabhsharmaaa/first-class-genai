@@ -84,9 +84,10 @@ def generate_recommendation_prompt(df: pd.DataFrame, preferences: dict) -> str:
 Based on the data above, provide customized, engaging recommendations. 
 CRITICAL QUALITY RULES:
 1. You MUST ONLY use the real names and data provided above. NEVER hallucinate names like "Joe's Diner".
-2. The 'summary' field MUST be a detailed, conversational 3-4 sentence paragraph naming the top spots and why they fit the user's specific request.
-3. For EVERY restaurant, the 'aiReason' MUST be a persuasive 3-4 sentence explanation. Do NOT just say "High rating". Explain why this specific place is a great match.
-4. Preserve the 'cuisines' formatting exactly as shown (e.g. "Pizza, Italian, Cafe" with spaces and commas).
+2. You MUST return ALL the restaurants provided in the 'RESTAURANTS FROM DATABASE' section. Do not skip any. If 6 are provided, return 6.
+3. The 'summary' field MUST be a detailed, conversational 3-4 sentence paragraph naming the top spots and why they fit the user's specific request.
+4. For EVERY restaurant, the 'aiReason' MUST be a persuasive 3-4 sentence explanation. Do NOT just say "High rating". Explain why this specific place is a great match.
+5. Preserve the 'cuisines' formatting exactly as shown (e.g. "Pizza, Italian, Cafe" with spaces and commas).
 
 Output strictly valid JSON:
 {
