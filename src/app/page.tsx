@@ -68,7 +68,7 @@ export default function Home() {
           if (data.parsed_filters) {
             const pf = data.parsed_filters;
 
-            // Location Sync
+            // Location Sync - only update if AI found a valid location from the prompt
             if (pf.location) {
               const matchedLoc = locations.find(l => l.toLowerCase() === pf.location.toLowerCase()) ||
                 locations.find(l => l.toLowerCase().includes(pf.location.toLowerCase()));
@@ -78,12 +78,12 @@ export default function Home() {
                 if (!locations.includes(pf.location)) setLocations(prev => [pf.location, ...prev]);
                 setSelectedLocation(pf.location);
               }
-            } else if (prompt) {
-              // If user used search box and AI found NO location, clear the old one
+            } else if (prompt && !selectedLocation) {
+              // If user used search box, AI found NO location, AND user hasn't manually selected one, clear it
               setSelectedLocation("");
             }
 
-            // Cuisine Sync
+            // Cuisine Sync - only update if AI found a valid cuisine from the prompt
             if (pf.cuisine) {
               const matchedCui = cuisines.find(c => c.toLowerCase() === pf.cuisine.toLowerCase()) ||
                 cuisines.find(c => c.toLowerCase().includes(pf.cuisine.toLowerCase()));
@@ -93,7 +93,7 @@ export default function Home() {
                 if (!cuisines.includes(pf.cuisine)) setCuisines(prev => [pf.cuisine, ...prev]);
                 setSelectedCuisine(pf.cuisine);
               }
-            } else if (prompt) {
+            } else if (prompt && !selectedCuisine) {
               setSelectedCuisine("");
             }
 

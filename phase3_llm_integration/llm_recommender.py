@@ -44,6 +44,7 @@ def parse_search_query(query: str, model: str = "llama-3.1-8b-instant") -> dict:
     - NEVER extract the country "Japan" as a location.
     - NEVER extract the city "Bangalore" as a location.
     - IMPORTANT: Some neighborhood names contain the word "City" (e.g., "Electronic City") or "Street" (e.g., "Church Street"). You MUST extract these as locations.
+    - IF THE USER DOES NOT EXPLICITLY MENTION A LOCATION IN THE QUERY, YOU MUST RETURN null FOR 'location'. NEVER GUESS OR ASSUME A LOCATION.
     - If a neighborhood is mentioned alongside a cuisine (e.g., "Japanese in Electronic City"), extract BOTH.
     - Return ONLY valid JSON.
     """
